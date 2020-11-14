@@ -1,10 +1,12 @@
 const express = require('express')
 const bodyParser = require('body-parser')
+const _ = require('lodash')
 const Sequelize = require('sequelize')
 const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
 const { authorizeClient } = require('./middleware/authorizeClient')
-const { getUnpaidJobs } = require('./services')
+const { authorizeAdmin } = require('./middleware/authorizeAdmin')
+const { getUnpaidJobs, getSumOfPaidJobsByProfession } = require('./services')
 const app = express()
 app.use(bodyParser.json())
 app.set('sequelize', sequelize)
@@ -144,6 +146,23 @@ app.post('/balances/deposit/:userId', getProfile, authorizeClient, async (req, r
   } else {
     res.json({ amount, limit })
   }
+})
+
+/**
+ * Returns the profession that earned the most money (sum of jobs paid) for any contactor that worked in the query time range.
+ * @returns the best profession
+ */
+app.get('/admin/best-profession', authorizeAdmin, async (req, res) => {
+  const jobs = await getSumOfPaidJobsByProfession(req)
+  const professions = jobs.reduce((acc, job) => {
+    const current = acc[job.Contract.Contractor.profession] || 0
+    acc[job.Contract.Contractor.profession] = current + job.price
+    return acc
+  }, {})
+  const profession = Object.keys(professions).sort((a, b) => professions[b] - professions[a])[0]
+  res.json({
+    profession,
+  })
 })
 
 module.exports = app

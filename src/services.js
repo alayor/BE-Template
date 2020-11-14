@@ -1,8 +1,6 @@
 const Sequelize = require('sequelize')
 const { sequelize } = require('./model')
 const Op = Sequelize.Op
-//TODO: delete me
-sequelize.sync({ logging: console.log })
 
 const getUnpaidJobs = async (req, profileId, statuses) => {
   const { Job, Contract } = req.app.get('models')
@@ -23,11 +21,12 @@ const getUnpaidJobs = async (req, profileId, statuses) => {
   })
 }
 
-const getSumOfPaidJobsByProfession = async req => {
+const getSumOfPaidJobsByProfession = async (req, startDate, endDate) => {
   const { Job, Contract, Profile } = req.app.get('models')
   return await Job.findAll({
     where: {
       paid: true,
+      createdAt: { [Op.between]: [startDate, endDate] },
     },
     include: [
       {

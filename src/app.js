@@ -12,8 +12,6 @@ app.use(bodyParser.json())
 app.set('sequelize', sequelize)
 app.set('models', sequelize.models)
 const Op = Sequelize.Op
-//TODO: delete me
-sequelize.sync({ logging: console.log })
 
 /**
  * Returns the contract that belongs to the profile.
@@ -61,19 +59,6 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
   const jobs = await getUnpaidJobs(req, profileId, ['in_progress'])
   if (!jobs) return res.status(404).end()
   res.json(jobs)
-})
-
-//TODO: delete me
-app.get('/jobs', async (req, res) => {
-  const { Job } = req.app.get('models')
-  const jobs = await Job.findAll()
-  res.json(jobs)
-})
-//TODO: delete me
-app.get('/profiles', async (req, res) => {
-  const { Profile } = req.app.get('models')
-  const profiles = await Profile.findAll()
-  res.json(profiles)
 })
 
 /**
@@ -153,7 +138,8 @@ app.post('/balances/deposit/:userId', getProfile, authorizeClient, async (req, r
  * @returns the best profession
  */
 app.get('/admin/best-profession', authorizeAdmin, async (req, res) => {
-  const jobs = await getSumOfPaidJobsByProfession(req)
+  const { start, end } = req.query
+  const jobs = await getSumOfPaidJobsByProfession(req, start, end)
   const professions = jobs.reduce((acc, job) => {
     const current = acc[job.Contract.Contractor.profession] || 0
     acc[job.Contract.Contractor.profession] = current + job.price

@@ -4,6 +4,7 @@ const Sequelize = require('sequelize')
 const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
 const { authorizeClient } = require('./middleware/authorizeClient')
+const { getUnpaidJobs } = require('./actions')
 const app = express()
 app.use(bodyParser.json())
 app.set('sequelize', sequelize)
@@ -54,25 +55,10 @@ app.get('/contracts', getProfile, async (req, res) => {
  * @returns unpaid jobs.
  */
 app.get('/jobs/unpaid', getProfile, async (req, res) => {
-  const { Job, Contract } = req.app.get('models')
   const { id: profileId } = req.profile
-  const contracts = await Job.findAll({
-    where: {
-      paid: { [Op.not]: true },
-    },
-    include: [
-      {
-        model: Contract,
-        required: true,
-        where: {
-          status: 'in_progress',
-          [Op.or]: [{ ClientId: profileId }, { ContractorId: profileId }],
-        },
-      },
-    ],
-  })
-  if (!contracts) return res.status(404).end()
-  res.json(contracts)
+  const jobs = await getUnpaidJobs(req, profileId, ['in_progress'])
+  if (!jobs) return res.status(404).end()
+  res.json(jobs)
 })
 
 //TODO: delete me
@@ -137,5 +123,10 @@ app.post('/jobs/:job_id/pay', getProfile, authorizeClient, async (req, res) => {
     res.json({ success: false, error: 'not.enough.balance' })
   }
 })
+
+/**
+ * Deposits money into the the the balance of a client.
+ */
+app.post('/balances/deposit/:userId', getProfile, authorizeClient, async (req, res) => {})
 
 module.exports = app

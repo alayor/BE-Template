@@ -115,19 +115,23 @@ app.post('/jobs/:job_id/pay', getProfile, authorizeClient, async (req, res) => {
   }
   const { balance } = req.profile
   if (balance >= job.price) {
-    // const transaction = await sequelize.transaction()
-    // await Profile.increment('balance', {
-    //   where: { by: 2, id: job.Contract.ContractorId },
-    //   transaction,
-    // })
-    // await Profile.decrement('balance', { where: { by: 2, id: job.Contract.ClientId }, transaction })
-    // await transaction.commit()
-    // try {
-    // } catch (error) {
-    //   await transaction.rollback()
-    //   throw error
-    // }
-
+    const transaction = await sequelize.transaction()
+    await Profile.increment('balance', {
+      by: job.price,
+      where: { id: job.Contract.ContractorId },
+      transaction,
+    })
+    await Profile.decrement('balance', {
+      by: job.price,
+      where: { id: job.Contract.ClientId },
+      transaction,
+    })
+    await transaction.commit()
+    try {
+    } catch (error) {
+      await transaction.rollback()
+      throw error
+    }
     res.json({ success: true })
   } else {
     res.json({ success: false, error: 'not.enough.balance' })

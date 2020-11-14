@@ -78,7 +78,12 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
  * Pay for a job.
  */
 app.post('/jobs/:job_id/pay', getProfile, authorizeClient, async (req, res) => {
-  res.json({})
+  const { balance } = req.profile
+  if (balance >= 500) {
+    res.json(true)
+  } else {
+    res.json({ success: false, error: 'not.enough.balance' })
+  }
 })
 
 module.exports = app

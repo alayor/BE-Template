@@ -34,7 +34,6 @@ app.get('/contracts/:id', getProfile, async (req, res) => {
  */
 app.get('/contracts', getProfile, async (req, res) => {
   const { Contract } = req.app.get('models')
-  const { id } = req.params
   const { id: profileId } = req.profile
   const contracts = await Contract.findAll({
     where: {
@@ -43,6 +42,32 @@ app.get('/contracts', getProfile, async (req, res) => {
       },
       [Op.or]: [{ ClientId: profileId }, { ContractorId: profileId }],
     },
+  })
+  if (!contracts) return res.status(404).end()
+  res.json(contracts)
+})
+
+/**
+ * Returns the unpaid jobs that belong to the profile.
+ * @returns unpaid jobs.
+ */
+app.get('/jobs/unpaid', getProfile, async (req, res) => {
+  const { Job, Contract } = req.app.get('models')
+  const { id: profileId } = req.profile
+  const contracts = await Job.findAll({
+    where: {
+      paid: { [Op.not]: true },
+    },
+    include: [
+      {
+        model: Contract,
+        required: true,
+        where: {
+          status: 'in_progress',
+          [Op.or]: [{ ClientId: profileId }, { ContractorId: profileId }],
+        },
+      },
+    ],
   })
   if (!contracts) return res.status(404).end()
   res.json(contracts)

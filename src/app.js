@@ -81,16 +81,25 @@ app.get('/jobs', async (req, res) => {
   const jobs = await Job.findAll()
   res.json(jobs)
 })
+//TODO: delete me
+app.get('/profiles', async (req, res) => {
+  const { Profile } = req.app.get('models')
+  const profiles = await Profile.findAll()
+  res.json(profiles)
+})
 
 /**
  * Pay for a job.
  */
 app.post('/jobs/:job_id/pay', getProfile, authorizeClient, async (req, res) => {
-  const { Job, Contract } = req.app.get('models')
+  const { Job, Contract, Profile } = req.app.get('models')
   const { job_id: jobId } = req.params
   const { id: profileId } = req.profile
   const job = await Job.findOne({
-    where: { id: jobId },
+    where: {
+      id: jobId,
+      paid: { [Op.not]: true },
+    },
     include: [
       {
         model: Contract,
@@ -102,11 +111,24 @@ app.post('/jobs/:job_id/pay', getProfile, authorizeClient, async (req, res) => {
     ],
   })
   if (!job) {
-    res.json({ success: false, error: 'job.not.found' })
+    res.json({ success: false, error: 'unpaid.job.not.found' })
   }
   const { balance } = req.profile
   if (balance >= job.price) {
-    res.json(true)
+    // const transaction = await sequelize.transaction()
+    // await Profile.increment('balance', {
+    //   where: { by: 2, id: job.Contract.ContractorId },
+    //   transaction,
+    // })
+    // await Profile.decrement('balance', { where: { by: 2, id: job.Contract.ClientId }, transaction })
+    // await transaction.commit()
+    // try {
+    // } catch (error) {
+    //   await transaction.rollback()
+    //   throw error
+    // }
+
+    res.json({ success: true })
   } else {
     res.json({ success: false, error: 'not.enough.balance' })
   }

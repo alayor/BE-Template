@@ -3,6 +3,7 @@ const bodyParser = require('body-parser')
 const Sequelize = require('sequelize')
 const { sequelize } = require('./model')
 const { getProfile } = require('./middleware/getProfile')
+const { authorizeClient } = require('./middleware/authorizeClient')
 const app = express()
 app.use(bodyParser.json())
 app.set('sequelize', sequelize)
@@ -71,6 +72,13 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
   })
   if (!contracts) return res.status(404).end()
   res.json(contracts)
+})
+
+/**
+ * Pay for a job.
+ */
+app.post('/jobs/:job_id/pay', getProfile, authorizeClient, async (req, res) => {
+  res.json({})
 })
 
 module.exports = app

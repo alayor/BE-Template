@@ -9,6 +9,7 @@ app.use(bodyParser.json())
 app.set('sequelize', sequelize)
 app.set('models', sequelize.models)
 const Op = Sequelize.Op
+//TODO: delete me
 sequelize.sync({ logging: console.log })
 
 /**
@@ -74,12 +75,37 @@ app.get('/jobs/unpaid', getProfile, async (req, res) => {
   res.json(contracts)
 })
 
+//TODO: delete me
+app.get('/jobs', async (req, res) => {
+  const { Job } = req.app.get('models')
+  const jobs = await Job.findAll()
+  res.json(jobs)
+})
+
 /**
  * Pay for a job.
  */
 app.post('/jobs/:job_id/pay', getProfile, authorizeClient, async (req, res) => {
+  const { Job, Contract } = req.app.get('models')
+  const { job_id: jobId } = req.params
+  const { id: profileId } = req.profile
+  const job = await Job.findOne({
+    where: { id: jobId },
+    include: [
+      {
+        model: Contract,
+        required: true,
+        where: {
+          [Op.or]: [{ ClientId: profileId }, { ContractorId: profileId }],
+        },
+      },
+    ],
+  })
+  if (!job) {
+    res.json({ success: false, error: 'job.not.found' })
+  }
   const { balance } = req.profile
-  if (balance >= 500) {
+  if (balance >= job.price) {
     res.json(true)
   } else {
     res.json({ success: false, error: 'not.enough.balance' })

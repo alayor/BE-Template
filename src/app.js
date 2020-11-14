@@ -127,6 +127,23 @@ app.post('/jobs/:job_id/pay', getProfile, authorizeClient, async (req, res) => {
 /**
  * Deposits money into the the the balance of a client.
  */
-app.post('/balances/deposit/:userId', getProfile, authorizeClient, async (req, res) => {})
+app.post('/balances/deposit/:userId', getProfile, authorizeClient, async (req, res) => {
+  const { userId: clientId } = req.params
+  const { amount } = req.body
+  if (!amount || amount <= 0) {
+    res.json({ success: false, error: 'invalid.amount' })
+  }
+  const jobs = await getUnpaidJobs(req, clientId, ['new', 'in_progress'])
+  const limit =
+    jobs.reduce((acc, val) => {
+      acc += val.price
+      return acc
+    }, 0) * 0.25
+  if (amount > limit) {
+    res.json({ success: false, error: 'invalid.amount' })
+  } else {
+    res.json({ amount, limit })
+  }
+})
 
 module.exports = app

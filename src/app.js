@@ -129,7 +129,7 @@ app.post('/balances/deposit/:userId', getProfile, authorizeClient, async (req, r
   if (amount > limit) {
     res.json({ success: false, error: 'invalid.amount' })
   } else {
-    res.json({ amount, limit })
+    res.json({ success: true })
   }
 })
 

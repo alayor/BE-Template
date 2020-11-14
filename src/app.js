@@ -27,4 +27,25 @@ app.get('/contracts/:id', getProfile, async (req, res) => {
   if (!contract) return res.status(404).end()
   res.json(contract)
 })
+
+/**
+ * Returns the non-terminated contracts that belongs to the profile.
+ * @returns non-terminated contracts.
+ */
+app.get('/contracts', getProfile, async (req, res) => {
+  const { Contract } = req.app.get('models')
+  const { id } = req.params
+  const { id: profileId } = req.profile
+  const contracts = await Contract.findAll({
+    where: {
+      status: {
+        [Op.not]: 'terminated',
+      },
+      [Op.or]: [{ ClientId: profileId }, { ContractorId: profileId }],
+    },
+  })
+  if (!contracts) return res.status(404).end()
+  res.json(contracts)
+})
+
 module.exports = app
